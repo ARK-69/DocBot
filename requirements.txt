@@ -1,0 +1,16 @@
+langchain
+langchain-community
+langchain-google-genai
+chromadb
+python-dotenv
+pypdf
+docx2txt
+unstructured
+sentence-transformers
+numpy
+flask
+flask-cors
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client

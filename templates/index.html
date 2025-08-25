@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocBot Chat</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #d9ecff, #b3daff);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chat-window {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      max-width: 70%;
+      margin: 8px 0;
+      padding: 12px 18px;
+      border-radius: 15px;
+      font-size: 14px;
+      word-wrap: break-word;
+      line-height: 1.4em;
+    }
+
+    .bot-message {
+      align-self: flex-start;
+      background-color: #ffffff;
+      color: #333;
+    }
+
+    .user-message {
+      align-self: flex-end;
+      background-color: #007bff;
+      color: white;
+    }
+
+    /* ✅ Formatting inside bot messages */
+    .bot-message h3 {
+      margin: 8px 0 5px;
+      font-size: 16px;
+      color: #0056b3;
+    }
+
+    .bot-message ul {
+      margin: 5px 0 5px 20px;
+      padding: 0;
+    }
+
+    .bot-message li {
+      margin-bottom: 4px;
+    }
+
+    .input-area {
+      display: flex;
+      padding: 10px;
+      background-color: #e6f2ff;
+      border-top: 1px solid #b3daff;
+      align-items: center;
+    }
+
+    .input-area input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #b3daff;
+      border-radius: 20px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .input-area button {
+      margin-left: 8px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .input-area button:hover {
+      background-color: #0056b3;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      margin-left: 8px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .upload-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-window" id="chatWindow">
+      <div class="message bot-message"><strong>DocBot:</strong> Hello! Upload a file or send me a message.</div>
+      <div class="message user-message"><strong>You:</strong> Hi DocBot!</div>
+    </div>
+
+    <div class="input-area">
+      <!-- Upload form -->
+      <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" id="fileUpload" name="file" accept=".pdf,.docx,.txt" hidden>
+        <label for="fileUpload" class="upload-btn">+</label>
+      </form>
+
+      <input type="text" id="userInput" placeholder="Type your message...">
+      <button id="sendBtn">➤</button>
+    </div>
+  </div>
+
+<script>
+  const chatWindow = document.getElementById("chatWindow");
+  const userInput = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  function appendMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.classList.add("message", sender === "user" ? "user-message" : "bot-message");
+
+    // ✅ Render HTML if bot message, plain text if user
+    if (sender === "user") {
+      msg.innerHTML = `<strong>You:</strong> ${text}`;
+    } else {
+      msg.innerHTML = `<strong>DocBot:</strong><br>${text}`;
+    }
+
+    chatWindow.appendChild(msg);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  sendBtn.addEventListener("click", () => {
+    const text = userInput.value.trim();
+    if (text) {
+      appendMessage(text, "user");
+      userInput.value = "";
+
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        appendMessage(data.response, "bot");
+
+        if (data.sources && data.sources.length > 0) {
+          let sourcesText = "<h3>Sources:</h3><ul>" + 
+                            data.sources.map(src => `<li>${src}</li>`).join("") + 
+                            "</ul>";
+          appendMessage(sourcesText, "bot");
+        }
+      })
+      .catch(err => {
+        appendMessage("Error: Could not connect to server.", "bot");
+      });
+    }
+  });
+
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      sendBtn.click();
+    }
+  });
+
+  // File upload handler
+  document.getElementById("fileUpload").addEventListener("change", function() {
+    const formData = new FormData(document.getElementById("uploadForm"));
+    fetch("/upload", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.text())
+    .then(msg => {
+      appendMessage(msg, "bot");
+    })
+    .catch(err => {
+      appendMessage("File upload failed.", "bot");
+    });
+  });
+</script>
+</body>
+</html>

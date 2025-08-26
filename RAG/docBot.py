@@ -15,7 +15,7 @@ from langchain.memory import ConversationBufferMemory
 load_dotenv()
 API_KEY = os.getenv("API_KEY")
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash",temperature=1.5, api_key=API_KEY)
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash",temperature=.75, api_key=API_KEY)
 
 def load_documents_from_directory(directory_path):
     loaders=[
